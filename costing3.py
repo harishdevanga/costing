@@ -27,10 +27,14 @@ if new_analysis:
     uploaded_file_simulation_db = st.file_uploader("Upload the simulation_db.xlsx file", type=["xlsx"])
     
     # Load data if the file is uploaded
-    if uploaded_file_simulation_db:
-        # Load the specific sheet from simulation_db.xlsx for 'Process_CT'
-        df = pd.read_excel(uploaded_file_simulation_db, sheet_name='Process_CT')
-
+    if uploaded_file_simulation_db:        
+        try:
+            df = pd.read_excel(uploaded_file_simulation_db, sheet_name='Process_CT')
+            # st.write("File successfully read. Preview below:")
+            # st.dataframe(df.head())
+        except Exception as e:
+            st.error(f"Error while reading the file: {e}")
+            
         # Extract the required values
         shift_hr_day = df.at[0, 'Shift Hr/day']
         days_week = df.at[0, 'Days/Week']
@@ -57,11 +61,6 @@ if new_analysis:
         df2 = pd.read_excel(uploaded_file_simulation_db, sheet_name='NRE')
 
         st.write("-------------------")
-
-        # # Print column names to verify
-        # st.write("Columns in 'NRE' sheet:", df2.columns.tolist())
-        # st.write("First few rows of 'NRE' sheet:")
-        # st.dataframe(df2.head())
 
         # Create an empty DataFrame with the defined columns
         initial_df = pd.DataFrame(columns=['Item', 'Unit Price (₹)', 'Life Cycle (Boards)', 'Qty for LCV', "Extended Price (₹)"])
@@ -92,6 +91,38 @@ if new_analysis:
         if 'reset_selectbox' not in st.session_state:
             st.session_state['reset_selectbox'] = 0
 
+        # Define the Product Volume from the 'Process_CT' sheet
+        vol_col1, vol_col2, vol_col3 = st.columns(3)
+
+        # Text inputs for Annual Volume and Product Life
+        with vol_col1:
+            annual_volume = st.text_input('Annual Volume', value="", disabled=False)
+
+        with vol_col2:
+            product_life = st.text_input('Product Life', value="", disabled=False)
+
+        # Safely convert inputs to float, defaulting to 0 if conversion fails
+        try:
+            annual_volume = float(annual_volume) if annual_volume else 0.0
+        except ValueError:
+            annual_volume = 0.0
+            st.warning("Invalid input for 'Annual Volume'. Please enter a number.")
+
+        try:
+            product_life = float(product_life) if product_life else 0.0
+        except ValueError:
+            product_life = 0.0
+            st.warning("Invalid input for 'Product Life'. Please enter a number.")
+
+        # Perform the calculation for Annual Volume
+        product_volume = annual_volume * product_life
+
+        # Display results
+        with vol_col3:
+            st.text_input('Product Volume', value=product_volume, disabled=True)
+
+        st.write("-------------------")
+        
         # Display the headings
         header_cols = st.columns(5)
         header_cols[0].markdown("<h6 style='text-align: center;'>Item</h6>", unsafe_allow_html=True)
@@ -99,7 +130,7 @@ if new_analysis:
         header_cols[2].markdown("<h6 style='text-align: center;'>Life Cycle (Boards)</h6>", unsafe_allow_html=True)
         header_cols[3].markdown("<h6 style='text-align: center;'>Qty for LCV</h6>", unsafe_allow_html=True)
         header_cols[4].markdown("<h6 style='text-align: center;'>Extended Price (₹)</h6>", unsafe_allow_html=True)
-
+        
         # Function to display a row
         def display_row():
             row_cols = st.columns(5)
@@ -108,10 +139,10 @@ if new_analysis:
             item = row_cols[0].selectbox('', [''] + list(df2['Item'].unique()), key=f'item_{st.session_state.reset_selectbox}')
             unit_price = df2[df2['Item'] == item]['Unit Price (₹)'].values[0] if item else ''
             life_cycle_boards = df2[df2['Item'] == item]['Life Cycle (Boards)'].values[0] if item else ''
-            # qty_for_lcv = df2[df2['Item'] == item]['Qty for LCV'].values[0] if item else ''
-            qty_for_lcv = 
-            # ext_price = df2[df2['Item'] == item]['Extended Price (₹)'].values[0] if item else ''
-            ext_price = unit_price * qty_for_lcv
+            
+            # Apply the formula for Qty for LCV
+            qty_for_lcv = 1 * (max(product_volume, life_cycle_boards) / life_cycle_boards) if life_cycle_boards else ''
+            ext_price = unit_price * qty_for_lcv if unit_price and qty_for_lcv else ''
 
             with row_cols[1]:
                 unit_price_input = st.text_input('', value=unit_price, key=f'unit_price_{st.session_state.reset_selectbox}')
@@ -158,6 +189,8 @@ if new_analysis:
             if st.button('Clear'):
                 # Increment the key to reset the select boxes
                 st.session_state['reset_selectbox'] += 1
+
+        st.write("-------------------")
 
         # Display the updated dataframe with a header
         st.markdown("## NRE Mapping")
