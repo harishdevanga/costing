@@ -3,6 +3,11 @@ import pandas as pd
 import openpyxl
 import numpy as np
 from openpyxl.utils.dataframe import dataframe_to_rows
+import matplotlib
+import os
+import tempfile
+import io
+
 
 # Set the page layout to wide
 st.set_page_config(layout="wide")
@@ -46,7 +51,7 @@ if new_analysis:
         st.write("")
 
         # Create text inputs for each value
-        col1, col2, col3 = st.columns(3)
+        col1, col2, col3, vol_col1, vol_col2, vol_col3 = st.columns(6)
 
         with col1:
             shift_hr_day_input = st.text_input('Shift Hr/day', value=shift_hr_day, disabled=True)
@@ -92,7 +97,7 @@ if new_analysis:
             st.session_state['reset_selectbox'] = 0
 
         # Define the Product Volume from the 'Process_CT' sheet
-        vol_col1, vol_col2, vol_col3 = st.columns(3)
+        # vol_col1, vol_col2, vol_col3 = st.columns(3)
 
         # Text inputs for Annual Volume and Product Life
         with vol_col1:
@@ -120,9 +125,7 @@ if new_analysis:
         # Display results
         with vol_col3:
             st.text_input('Product Volume', value=product_volume, disabled=True)
-
-        st.write("-------------------")
-        
+              
         # Display the headings
         header_cols = st.columns(5)
         header_cols[0].markdown("<h6 style='text-align: center;'>Item</h6>", unsafe_allow_html=True)
@@ -190,8 +193,118 @@ if new_analysis:
                 # Increment the key to reset the select boxes
                 st.session_state['reset_selectbox'] += 1
 
-        st.write("-------------------")
-
         # Display the updated dataframe with a header
         st.markdown("## NRE Mapping")
         st.dataframe(st.session_state['filtered_data'], use_container_width=True)
+
+        totalcost_col1, toolmaintenance_col2, totalextendedprice_col3, nreperunit_col4 = st.columns(4)
+
+        with totalcost_col1:
+            # Convert the 'Extended Price (₹)' column to numeric
+            st.session_state['filtered_data']['Extended Price (₹)'] = pd.to_numeric(st.session_state['filtered_data']['Extended Price (₹)'], errors='coerce')            
+            # Calculate the total cost
+            total_cost = st.session_state['filtered_data']['Extended Price (₹)'].sum()
+            total_cost_value = float(total_cost)
+            st.text_input('Total Cost (₹)', value=total_cost, disabled=True)
+
+        with toolmaintenance_col2:
+            tool_maintenance_rate = st.text_input('Tool Maintenance Rate (%)', value="", disabled=False)
+            tool_maintenance_rate_value = float(tool_maintenance_rate) / 100 if tool_maintenance_rate else 0.0
+
+        with totalextendedprice_col3:
+            tool_maintenance_cost = total_cost_value * tool_maintenance_rate_value
+            total_extended_price = total_cost_value + tool_maintenance_cost
+            st.text_input('Total Extended Price (₹)', value=total_extended_price, disabled=True)
+
+        with nreperunit_col4:
+            nre_per_unit = total_extended_price / product_volume if product_volume else 0
+            st.text_input('NRE per Unit (₹)', value=nre_per_unit, disabled=True)
+
+        # Provide inputs for file name, sheet name, and path
+        st.markdown("### Save Data to Excel")
+
+        # Provide inputs for file name and sheet name only (without path)
+        file_name = st.text_input("Enter the Excel file name (with .xlsx extension):")
+        sheet_name = st.text_input("Enter the sheet name:")
+
+        # Add a button to save the entire DataFrame
+        if st.button("Save DataFrame to Excel"):
+            with tempfile.TemporaryDirectory() as tmpdirname:
+                full_path = os.path.join(tmpdirname, file_name)
+
+                # Write data to Excel file
+                with pd.ExcelWriter(full_path, engine='openpyxl') as writer:
+                    # Prepare the DataFrame for saving
+                    final_df = st.session_state['filtered_data'].copy()
+                    
+                    # Add the additional fields in the first row
+                    for col, value in zip(
+                        ['Annual Volume', 'Product Life', 'Product Volume', 'Total Cost (₹)', 'Tool Maintenance Rate (%)', 
+                        'Extended Price (₹)', 'NRE Per Unit ($)'],
+                        [annual_volume, product_life, product_volume, total_cost, tool_maintenance_rate_value, 
+                        total_extended_price, nre_per_unit]):
+                        final_df.at[0, col] = value
+                    final_df.to_excel(writer, sheet_name=sheet_name, index=False)
+                
+                # Load the saved file and create a download link
+                with open(full_path, "rb") as f:
+                    st.download_button(
+                        label="Download Excel file",
+                        data=f,
+                        file_name=file_name,
+                        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                    )
+        st.write("-------------------")
+
+        # Load the specific sheet from simulation_db.xlsx for 'MMR-EMS'
+        df3 = pd.read_excel(uploaded_file_simulation_db, sheet_name='MMR-EMS')
+
+        # File uploader for Excel/CSV/XLSM files
+        uploaded_file = st.file_uploader("Choose an Excel/CSV/XLSM file", type=["xlsx", "csv", "xlsm"])
+
+        if uploaded_file:
+            # Load data from the uploaded file
+            @st.cache_data
+            def load_data(file):
+                if file.name.endswith('.csv'):
+                    df = pd.read_csv(file)
+                else:
+                    df = pd.read_excel(file, sheet_name=None)
+                return df
+
+            df4 = load_data(uploaded_file)
+
+            # Initialize session state to store edited data for each sheet
+            if 'edited_sheets' not in st.session_state:
+                st.session_state.edited_sheets = {}
+
+            processmapping_col1, processmapping_col2 = st.columns(2)
+            if isinstance(df4, dict):
+                with processmapping_col1:
+                    sheet_name = st.selectbox("Select the sheet", df4.keys())
+
+                # Check if the sheet has been edited before; if so, load the edited version
+                if sheet_name in st.session_state.edited_sheets:
+                    st.session_state.df = st.session_state.edited_sheets[sheet_name]
+                else:
+                    selected_data = df4[sheet_name]
+                    st.session_state.df = pd.DataFrame(selected_data)  # Load original data from file
+
+                # 1. Provide an option to select the product development stage
+                with processmapping_col2:            
+                    stages = ['MK0', 'MK1', 'MK2', 'MK3', 'X1', 'X1.1', 'X1.2']  # Add more stages if needed
+                    selected_stage = st.selectbox("Select the product development stage", stages)
+
+                # Display data in a table
+                st.subheader("Data Table")
+                edited_data = st.data_editor(st.session_state.df4)
+
+
+
+# Example to show how the existing_analysis would be implemented
+if existing_analysis:
+    st.subheader("Existing Analysis")
+    # Implement logic for existing analysis here
+    st.write("Feature under development.")
+
+
