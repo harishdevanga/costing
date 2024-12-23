@@ -258,7 +258,7 @@ if new_analysis:
 
         # Load the specific sheet from simulation_db.xlsx for 'MMR-EMS'
         df3 = pd.read_excel(uploaded_file_simulation_db, sheet_name='MMR-EMS')
-        df4 = pd.read_excel(uploaded_file_simulation_db, sheet_name='Assumptions')
+        df5 = pd.read_excel(uploaded_file_simulation_db, sheet_name='Assumptions')
 
         # File uploader for Excel/CSV/XLSM files
         uploaded_file = st.file_uploader("Choose Process Maping Excel/CSV/XLSM file", type=["xlsx", "csv", "xlsm"])
@@ -322,9 +322,21 @@ if new_analysis:
                 edited_data["Batch Set up Cost"] = np.nan
                 edited_data['Labour cost/Hr'] = np.nan
 
-                labour_cost_hr = 
-                # Calculate "Labour cost/Hr"
-                edited_data['Batch Set up Cost'] = edited_data['Batch Set up Time'] / edited_data['MMR']
+                # Calculate batch_qty
+                months_per_year = 12
+                batch_qty = annual_volume / months_per_year
+
+                # Merge `edited_data` with `df4` to get 'Labour cost/Hr'
+                labour_cost_hr = df5.loc[0, 'Labour cost/Hr']                
+                
+                # Compute Batch Set Up Cost
+                edited_data['Batch Set up Cost'] = (
+                    (((edited_data['Batch Set up Time'] * labour_cost_hr) / 3600) * 1.15) / batch_qty
+                ) * edited_data['FTE for Batch Set up']
+
+                # Fill in NaN "Batch Set up Cost" values with 0 or a default
+                edited_data['Batch Set up Cost'] = edited_data['Batch Set up Cost'].fillna(0)
+                edited_data['Labour cost/Hr'] = edited_data['Labour cost/Hr'].fillna(0)
 
                 # Display the updated DataFrame
                 st.data_editor(edited_data, key=f"data_editor_{sheet_name}_merged")                
@@ -336,5 +348,3 @@ if existing_analysis:
     st.subheader("Existing Analysis")
     # Implement logic for existing analysis here
     st.write("Feature under development.")
-
-
