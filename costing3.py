@@ -258,9 +258,10 @@ if new_analysis:
 
         # Load the specific sheet from simulation_db.xlsx for 'MMR-EMS'
         df3 = pd.read_excel(uploaded_file_simulation_db, sheet_name='MMR-EMS')
+        df4 = pd.read_excel(uploaded_file_simulation_db, sheet_name='Assumptions')
 
         # File uploader for Excel/CSV/XLSM files
-        uploaded_file = st.file_uploader("Choose an Excel/CSV/XLSM file", type=["xlsx", "csv", "xlsm"])
+        uploaded_file = st.file_uploader("Choose Process Maping Excel/CSV/XLSM file", type=["xlsx", "csv", "xlsm"])
 
         if uploaded_file:
             # Load data from the uploaded file
@@ -274,30 +275,59 @@ if new_analysis:
 
             df4 = load_data(uploaded_file)
 
+
             # Initialize session state to store edited data for each sheet
             if 'edited_sheets' not in st.session_state:
                 st.session_state.edited_sheets = {}
-
+            else:
+                # Initialize df4 with loaded data
+                st.session_state['df4'] = df4
             processmapping_col1, processmapping_col2 = st.columns(2)
             if isinstance(df4, dict):
                 with processmapping_col1:
                     sheet_name = st.selectbox("Select the sheet", df4.keys())
 
-                # Check if the sheet has been edited before; if so, load the edited version
                 if sheet_name in st.session_state.edited_sheets:
                     st.session_state.df = st.session_state.edited_sheets[sheet_name]
                 else:
                     selected_data = df4[sheet_name]
                     st.session_state.df = pd.DataFrame(selected_data)  # Load original data from file
 
-                # 1. Provide an option to select the product development stage
-                with processmapping_col2:            
+                with processmapping_col2:
                     stages = ['MK0', 'MK1', 'MK2', 'MK3', 'X1', 'X1.1', 'X1.2']  # Add more stages if needed
                     selected_stage = st.selectbox("Select the product development stage", stages)
 
-                # Display data in a table
-                st.subheader("Data Table")
-                edited_data = st.data_editor(st.session_state.df4)
+                    # Display data in a table (unique key based on sheet name)
+                    st.subheader("Data Table")
+                edited_data = st.data_editor(st.session_state.df, key=f"data_editor_{sheet_name}")
+                
+                # Compute VA MC Cost based on EMS MMR (using edited data)
+                @st.cache_data
+                def merge_data(df, df3):
+                    return df.merge(df3, left_on='Stage', right_on='Process Name', how='left')
+
+                # Display the merged data after editing
+                edited_data = merge_data(edited_data, df3)
+                # st.data_editor(edited_data, key=f"data_editor_{sheet_name}_merged")
+
+                # Add a new column "VA MC Cost" with initial values as NaN
+                edited_data['VA MC Cost'] = np.nan
+
+                # Calculate "VA MC Cost" where both "Process Cycle Time" and "MMR" are numeric
+                edited_data['VA MC Cost'] = edited_data['Process Cycle Time'] * edited_data['MMR']
+
+                # Fill remaining NaN values with 0
+                edited_data['VA MC Cost'] = edited_data['VA MC Cost'].fillna(0)
+
+                edited_data["Batch Set up Cost"] = np.nan
+                edited_data['Labour cost/Hr'] = np.nan
+
+                labour_cost_hr = 
+                # Calculate "Labour cost/Hr"
+                edited_data['Batch Set up Cost'] = edited_data['Batch Set up Time'] / edited_data['MMR']
+
+                # Display the updated DataFrame
+                st.data_editor(edited_data, key=f"data_editor_{sheet_name}_merged")                
 
 
 
