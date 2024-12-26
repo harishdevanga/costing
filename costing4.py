@@ -7,6 +7,7 @@ import matplotlib
 import os
 import tempfile
 import io
+import plotly.graph_objects as go
 
 
 # Set the page layout to wide
@@ -555,11 +556,8 @@ if new_analysis:
                     cost_nre = 0.0
                     cost_consumables = 0.0
 
-                st.write("OHP % Input & Cost Output")
+                st.write("OHP % Input")
                 ohp_col1, ohp_col2, ohp_col3, ohp_col4, ohp_col5, ohp_col6, ohp_col7 = st.columns(7)
-                ohp_col8, ohp_col9, ohp_col10, ohp_col11  = st.columns(4)
-                ohp_col12, ohp_col13, ohp_col14, ohp_col15, ohp_col16, ohp_col17 = st.columns(6)
-                ohp_col18, ohp_col19, ohp_col20 = st.columns(3)
 
                 with ohp_col1:
                     moh_percentage = st.text_input('MOH %', value="", disabled=False)
@@ -596,7 +594,12 @@ if new_analysis:
                     r_n_d_percentage = 0.0
                     warranty_percentage = 0.0
                     sg_and_a_percentage = 0.0
+                
+                st.write("OverHeads, Profit & Other Cost Summary")
 
+                ohp_col8, ohp_col9, ohp_col10, ohp_col11  = st.columns(4)
+                ohp_col12, ohp_col13, ohp_col14, ohp_col15, ohp_col16, ohp_col17 = st.columns(6)
+                ohp_col18, ohp_col19, ohp_col20 = st.columns(3)
                 with ohp_col8:
                     moh_percentage = moh_percentage / 100           # Convert from percentage to fraction
                     pcb_comp_mech_cost = cost_pcb + cost_electronics_components + cost_mech_components
@@ -654,6 +657,34 @@ if new_analysis:
                     conversion_cost_value = grand_total_cost_value - total_material_cost_value
                     conversion_cost = st.text_input('Conversion Cost ($)', value=conversion_cost_value, disabled=True)
 
+                # Data for the pie chart
+                labels = ['RM Cost', 'Conversion Cost']
+                values = [rm_cost_value, conversion_cost_value]
+
+                # Create the pie chart
+                fig = go.Figure(data=[go.Pie(labels=labels, values=values)])
+
+                # Add title
+                fig.update_layout(title_text='RM Cost vs Conversion Cost')
+
+                # Streamlit layout to display the pie chart
+                graph_col1, graph_col2 = st.columns(2)
+
+                with graph_col2:
+                    st.plotly_chart(fig, use_container_width=True)
+
+                # Data for the pie chart
+                labels = ['Material Cost ($)', 'Manufacturing Cost ($)', "OH&P ($)", "R&D ($)", "Warranty ($)", "SG&A ($)"]
+                values = [total_material_cost_value, total_manufacturing_cost_value, total_ohp_cost_value, r_n_d_cost_value, warranty_cost_value, sg_and_a_cost_value]
+
+                # Create the pie chart
+                fig = go.Figure(data=[go.Pie(labels=labels, values=values, hole=0.4)])
+
+                # Add title
+                fig.update_layout(title_text='Total Cost ($) Summary')
+
+                with graph_col1:
+                    st.plotly_chart(fig, use_container_width=True)
 
 # Example to show how the existing_analysis would be implemented
 if existing_analysis:
