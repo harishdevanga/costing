@@ -9,6 +9,7 @@ import tempfile
 import io
 import plotly.graph_objects as go
 import uuid  # Add this import at the top of your script
+import math
 
 
 # Set the page layout to wide
@@ -355,10 +356,8 @@ if new_analysis:
                 
 
                 # Create one row with 4 columns for headings
-                rtv_col, solder_top_col, solder_bottom_col, flux_col = st.columns(4)
-
-
-
+                rtv_col, solder_top_col, solder_bottom_col, flux_col, solder_bar_col = st.columns(5)
+                
                 # RTV Glue
                 with rtv_col:
                     st.subheader("RTV Glue")
@@ -366,8 +365,8 @@ if new_analysis:
                     # Input Fields
                     glue_wt_per_board = st.text_input('Glue Wt/Board', value="", key="glue_wt_per_board")
                     wastage_percentage_per_board = st.text_input('RTV Wastage %', value="", key="wastage_percentage_per_board")
-                    rtv_glue_cost = st.text_input('RTV Glue Cost', value="", key="rtv_glue_cost")
-                    specific_gravity_of_solder = st.text_input('Specific Gravity Of Solder', value="", key="specific_gravity_of_solder")
+                    rtv_glue_cost = st.text_input('RTV Glue Cost', value="0.052", key="rtv_glue_cost", disabled=True)
+                    rtv_specific_gravity = st.text_input('RTV Specific Gravity', value="1.09", key="specific_gravity_of_solder", disabled=True)
 
                     # Initialize the output variables
                     wt_per_board_incl_wastage = 0.0
@@ -378,11 +377,11 @@ if new_analysis:
                         glue_wt_per_board = float(glue_wt_per_board) if glue_wt_per_board else 0.0
                         wastage_percentage_per_board = float(wastage_percentage_per_board) if wastage_percentage_per_board else 0.0
                         rtv_glue_cost = float(rtv_glue_cost) if rtv_glue_cost else 0.0
-                        specific_gravity_of_solder = float(specific_gravity_of_solder) if specific_gravity_of_solder else 0.0
+                        rtv_specific_gravity = float(rtv_specific_gravity) if rtv_specific_gravity else 0.0
 
                         # Calculate wt_per_board_incl_wastage
                         wt_per_board_incl_wastage = (
-                            (glue_wt_per_board * specific_gravity_of_solder) * (1 + (wastage_percentage_per_board / 100))
+                            (glue_wt_per_board * rtv_specific_gravity) * (1 + (wastage_percentage_per_board / 100))
                         )
 
                         # Calculate rtv_cost_per_board
@@ -530,6 +529,47 @@ if new_analysis:
                     flux_cost_per_board_value = flux_spread_area_value * flux_cost
                     flux_cost_per_board = st.text_input('Flux Cost Per Board($)', value=flux_cost_per_board_value, key="flux_cost_per_board", disabled=True)
 
+
+                # Flux Wave Soldering
+                with solder_bar_col:
+                    st.subheader("Solder Bar")
+                    # Input Fields
+                    outer_dia_of_pad = st.text_input('Outer Dia of Pad(mm)', value="", key="outer_dia_of_pad", disabled=False)
+                    inner_dia_of_pad = st.text_input('Inner Dia of Pad(mm)', value="", key="inner_dia_of_pad", disabled=False)
+                    no_of_solder_joints = st.text_input('No of  Solder Joints', value="", key="no_of_solder_joints", disabled=False)
+                    thickness_of_solder = st.text_input('Thickness of Solder(mm)', value="0.6", key="thickness_of_solder", disabled=True)
+                    # volume_of_solder = st.text_input('Volume of Solder(mm^3)', value="", key="volume_of_solder", disabled=True)
+                    # weight_of_Solder_per_joint = st.text_input('Weight of Solder per Joint(g)', value="", key="weight_of_Solder_per_joint", disabled=True)
+                    # weight_of_Solder_per_board = st.text_input('Weight of Solder per Board(g)', value="", key="weight_of_Solder_per_board", disabled=True)
+
+                    try:
+                        # Safely convert inputs to float
+                        outer_dia_of_pad = float(outer_dia_of_pad) if outer_dia_of_pad else 0.0
+                        inner_dia_of_pad = float(inner_dia_of_pad) if inner_dia_of_pad else 0.0
+                        no_of_solder_joints = float(no_of_solder_joints) if no_of_solder_joints else 0.0
+                        thickness_of_solder = float(thickness_of_solder) if thickness_of_solder else 0.0
+                        # volume_of_solder = float(volume_of_solder) if volume_of_solder else 0.0
+                        # weight_of_Solder_per_joint = float(weight_of_Solder_per_joint) if weight_of_Solder_per_joint else 0.0
+                        # weight_of_Solder_per_board = float(weight_of_Solder_per_board) if weight_of_Solder_per_board else 0.0
+
+
+                        # Calculate the area of the annular ring
+                        area_of_ring = math.pi * ((outer_dia_of_pad/2)**2 - (inner_dia_of_pad/2)**2)
+
+                        # Calculate the volume of solder per joint
+                        volume_of_solder_per_joint = area_of_ring * thickness_of_solder
+
+                        weight_of_Solder_per_joint = (volume_of_solder_per_joint/1000) * paste_specific_gravity
+                        weight_of_Solder_per_board = weight_of_Solder_per_joint * no_of_solder_joints
+
+                    except ValueError:
+                        st.error("Please enter valid numeric values for all inputs.")
+
+                    # Display the calculated value
+                    st.text_input('Volume of Solder per Joint', value=f"{volume_of_solder_per_joint:.2f}", key="volume_of_solder_per_joint", disabled=True) 
+                    st.text_input('Weight of Solder per Joint', value=f"{weight_of_Solder_per_joint:.2f}", key="weight_of_Solder_per_joint", disabled=True) 
+                    st.text_input('Weight of Solder per Board', value=f"{weight_of_Solder_per_board:.2f}", key="weight_of_Solder_per_board", disabled=True) 
+
                 st.header("RM & Conversion Cost Summary")                
                 # Create one row with 4 columns for headings
                 input_cost_col, ohpandother_percentage_col, ohpandother_cost_col, placeholder2_col = st.columns(4)
@@ -595,9 +635,9 @@ if new_analysis:
                             percentage_values[label] = cols[i].text_input(label, value=str(value), disabled=True)
 
                     # Aggregate dummy data
-                    total_factory_overheads_batchsetup = sum(selected_data["Batch Set up Cost"])
-                    total_factory_overheads_vamachine = sum(selected_data["VA MC Cost"])
-                    total_factory_overheads_labour = sum(selected_data["Labour cost/Hr"])
+                    total_factory_overheads_batchsetup = sum(edited_data["Batch Set up Cost"])
+                    total_factory_overheads_vamachine = sum(edited_data["VA MC Cost"])
+                    total_factory_overheads_labour = sum(edited_data["Labour cost/Hr"])
 
                     # Convert percentages to fractions and compute costs
                     pcb_comp_mech_cost = cost_pcb + cost_electronics_components + cost_mech_components
@@ -652,7 +692,7 @@ if new_analysis:
 
                             # Add new columns if they don't exist
                             columns_to_add = [
-                                'Glue Wt/Board','RTV Wastage %','RTV Glue Cost','Specific Gravity Of Solder','Wt per Board (Incl Wastage %)','RTV Cost Per Board', #RTV Glue section
+                                'Glue Wt/Board','RTV Wastage %','RTV Glue Cost','RTV Specific Gravity','Wt per Board (Incl Wastage %)','RTV Cost Per Board', #RTV Glue section
                                 "Board Length(mm)","Board Width(mm)","Top Weight Estimate %","Top Solder Paste Wastage %","Paste Specific Gravity(g/cc)","Cost of Solder Bar($/g)","Solder Paste Thickness(mm)","Weight of solder paste for 100%(g)", "Top Weight of solder paste for Weight Estimate (g)","Top Side Cost Per Board($)", #Solder Paste - Top section
                                 "Bottom Weight Estimate %","Bottom Solder Paste Wastage %","Bottom Weight of solder paste for Weight Estimate (g)","Bottom Side Cost Per Board($)",  #Solder Paste - Bottom section
                                 "Flux Wastage %","Flux Cost($/ml)","Board Area(mm^2)","Flux Spread Area(mm^2)","Flux Cost Per Board($)", #Flux Wave Soldering section
@@ -669,7 +709,7 @@ if new_analysis:
                             current_data.loc[0, 'Glue Wt/Board'] = glue_wt_per_board
                             current_data.loc[0, 'RTV Wastage %'] = wastage_percentage_per_board
                             current_data.loc[0, 'RTV Glue Cost'] = rtv_glue_cost
-                            current_data.loc[0, 'Specific Gravity Of Solder'] = specific_gravity_of_solder
+                            current_data.loc[0, 'RTV Specific Gravity'] = rtv_specific_gravity
                             current_data.loc[0, 'Wt per Board (Incl Wastage %)'] = wt_per_board_incl_wastage
                             current_data.loc[0, 'RTV Cost Per Board'] = rtv_cost_per_board
                             current_data.loc[0, "Board Length(mm)"] = board_length  
@@ -906,8 +946,8 @@ if existing_analysis:
                 # Input Fields
                 glue_wt_per_board = st.text_input('Glue Wt/Board', value="", key="glue_wt_per_board")
                 wastage_percentage_per_board = st.text_input('RTV Wastage %', value="", key="wastage_percentage_per_board")
-                rtv_glue_cost = st.text_input('RTV Glue Cost', value="", key="rtv_glue_cost")
-                specific_gravity_of_solder = st.text_input('Specific Gravity Of Solder', value="", key="specific_gravity_of_solder")
+                rtv_glue_cost = st.text_input('RTV Glue Cost', value="0.052", key="rtv_glue_cost", disabled=True)
+                rtv_specific_gravity = st.text_input('RTV Specific Gravity', value="1.09", key="specific_gravity_of_solder", disabled=True)
 
                 # Initialize the output variables
                 wt_per_board_incl_wastage = 0.0
@@ -918,11 +958,11 @@ if existing_analysis:
                     glue_wt_per_board = float(glue_wt_per_board) if glue_wt_per_board else 0.0
                     wastage_percentage_per_board = float(wastage_percentage_per_board) if wastage_percentage_per_board else 0.0
                     rtv_glue_cost = float(rtv_glue_cost) if rtv_glue_cost else 0.0
-                    specific_gravity_of_solder = float(specific_gravity_of_solder) if specific_gravity_of_solder else 0.0
+                    rtv_specific_gravity = float(rtv_specific_gravity) if rtv_specific_gravity else 0.0
 
                     # Calculate wt_per_board_incl_wastage
                     wt_per_board_incl_wastage = (
-                        (glue_wt_per_board * specific_gravity_of_solder) * (1 + (wastage_percentage_per_board / 100))
+                        (glue_wt_per_board * rtv_specific_gravity) * (1 + (wastage_percentage_per_board / 100))
                     )
 
                     # Calculate rtv_cost_per_board
@@ -1191,7 +1231,7 @@ if existing_analysis:
 
                         # Add new columns if they don't exist
                         columns_to_add = [
-                            'Glue Wt/Board','RTV Wastage %','RTV Glue Cost','Specific Gravity Of Solder','Wt per Board (Incl Wastage %)','RTV Cost Per Board', #RTV Glue section
+                            'Glue Wt/Board','RTV Wastage %','RTV Glue Cost','RTV Specific Gravity','Wt per Board (Incl Wastage %)','RTV Cost Per Board', #RTV Glue section
                             "Board Length(mm)","Board Width(mm)","Top Weight Estimate %","Top Solder Paste Wastage %","Paste Specific Gravity(g/cc)","Cost of Solder Bar($/g)","Solder Paste Thickness(mm)","Weight of solder paste for 100%(g)", "Top Weight of solder paste for Weight Estimate (g)","Top Side Cost Per Board($)", #Solder Paste - Top section
                             "Bottom Weight Estimate %","Bottom Solder Paste Wastage %","Bottom Weight of solder paste for Weight Estimate (g)","Bottom Side Cost Per Board($)",  #Solder Paste - Bottom section
                             "Flux Wastage %","Flux Cost($/ml)","Board Area(mm^2)","Flux Spread Area(mm^2)","Flux Cost Per Board($)", #Flux Wave Soldering section
@@ -1208,7 +1248,7 @@ if existing_analysis:
                         current_data.loc[0, 'Glue Wt/Board'] = glue_wt_per_board
                         current_data.loc[0, 'RTV Wastage %'] = wastage_percentage_per_board
                         current_data.loc[0, 'RTV Glue Cost'] = rtv_glue_cost
-                        current_data.loc[0, 'Specific Gravity Of Solder'] = specific_gravity_of_solder
+                        current_data.loc[0, 'RTV Specific Gravity'] = rtv_specific_gravity
                         current_data.loc[0, 'Wt per Board (Incl Wastage %)'] = wt_per_board_incl_wastage
                         current_data.loc[0, 'RTV Cost Per Board'] = rtv_cost_per_board
                         current_data.loc[0, "Board Length(mm)"] = board_length  
