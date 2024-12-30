@@ -9,7 +9,7 @@ import tempfile
 import io
 import plotly.graph_objects as go
 import uuid  # Add this import at the top of your script
-
+import math
 
 # Set the page layout to wide
 st.set_page_config(layout="wide")
@@ -355,9 +355,7 @@ if new_analysis:
                 
 
                 # Create one row with 4 columns for headings
-                rtv_col, solder_top_col, solder_bottom_col, flux_col = st.columns(4)
-
-
+                rtv_col, solder_top_col, solder_bottom_col, flux_col, solder_bar_col = st.columns(5)
 
                 # RTV Glue
                 with rtv_col:
@@ -529,6 +527,46 @@ if new_analysis:
                     st.text_input('Flux Spread Area(mm^2)', value=f"{flux_spread_area_value:.2f}", key="flux_spread_area", disabled=True)
                     flux_cost_per_board_value = flux_spread_area_value * flux_cost
                     flux_cost_per_board = st.text_input('Flux Cost Per Board($)', value=flux_cost_per_board_value, key="flux_cost_per_board", disabled=True)
+
+                # Flux Wave Soldering
+                with solder_bar_col:
+                    st.subheader("Solder Bar")
+                    # Input Fields
+                    outer_dia_of_pad = st.text_input('Outer Dia of Pad(mm)', value="", key="outer_dia_of_pad", disabled=False)
+                    inner_dia_of_pad = st.text_input('Inner Dia of Pad(mm)', value="", key="inner_dia_of_pad", disabled=False)
+                    no_of_solder_joints = st.text_input('No of  Solder Joints', value="", key="no_of_solder_joints", disabled=False)
+                    thickness_of_solder = st.text_input('Thickness of Solder(mm)', value="0.6", key="thickness_of_solder", disabled=True)
+                    # volume_of_solder = st.text_input('Volume of Solder(mm^3)', value="", key="volume_of_solder", disabled=True)
+                    # weight_of_Solder_per_joint = st.text_input('Weight of Solder per Joint(g)', value="", key="weight_of_Solder_per_joint", disabled=True)
+                    # weight_of_Solder_per_board = st.text_input('Weight of Solder per Board(g)', value="", key="weight_of_Solder_per_board", disabled=True)
+
+                    try:
+                        # Safely convert inputs to float
+                        outer_dia_of_pad = float(outer_dia_of_pad) if outer_dia_of_pad else 0.0
+                        inner_dia_of_pad = float(inner_dia_of_pad) if inner_dia_of_pad else 0.0
+                        no_of_solder_joints = float(no_of_solder_joints) if no_of_solder_joints else 0.0
+                        thickness_of_solder = float(thickness_of_solder) if thickness_of_solder else 0.0
+                        # volume_of_solder = float(volume_of_solder) if volume_of_solder else 0.0
+                        # weight_of_Solder_per_joint = float(weight_of_Solder_per_joint) if weight_of_Solder_per_joint else 0.0
+                        # weight_of_Solder_per_board = float(weight_of_Solder_per_board) if weight_of_Solder_per_board else 0.0
+
+
+                        # Calculate the area of the annular ring
+                        area_of_ring = math.pi * ((outer_dia_of_pad/2)**2 - (inner_dia_of_pad/2)**2)
+
+                        # Calculate the volume of solder per joint
+                        volume_of_solder_per_joint = area_of_ring * thickness_of_solder
+
+                        weight_of_Solder_per_joint = (volume_of_solder_per_joint/1000) * paste_specific_gravity
+                        weight_of_Solder_per_board = weight_of_Solder_per_joint * no_of_solder_joints
+
+                    except ValueError:
+                        st.error("Please enter valid numeric values for all inputs.")
+
+                    # Display the calculated value
+                    st.text_input('Volume of Solder per Joint', value=f"{volume_of_solder_per_joint:.2f}", key="volume_of_solder_per_joint", disabled=True) 
+                    st.text_input('Weight of Solder per Joint', value=f"{weight_of_Solder_per_joint:.2f}", key="weight_of_Solder_per_joint", disabled=True) 
+                    st.text_input('Weight of Solder per Board', value=f"{weight_of_Solder_per_board:.2f}", key="weight_of_Solder_per_board", disabled=True) 
 
                 st.header("RM & Conversion Cost Summary")                
                 # Create one row with 4 columns for headings
