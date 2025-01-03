@@ -364,8 +364,8 @@ if new_analysis:
                     # Input Fields
                     glue_wt_per_board = st.text_input('RTV Wt/Brd Est', value="", key="glue_wt_per_board")
                     wastage_percentage_per_board = st.text_input('RTV Wastage %', value="", key="wastage_percentage_per_board")
-                    rtv_glue_cost = st.text_input('RTV Cost/ml', value="", key="rtv_glue_cost")
-                    specific_gravity_of_solder = st.text_input('RTV Solder SG', value="", key="specific_gravity_of_solder")
+                    rtv_glue_cost = st.text_input('RTV Cost/ml', value="0.052", key="rtv_glue_cost", disabled=True)
+                    specific_gravity_of_solder = st.text_input('RTV Solder SG', value="1.09", key="specific_gravity_of_solder", disabled=True)
 
                     # Initialize the output variables
                     wt_per_board_incl_wastage = 0.0
@@ -562,9 +562,9 @@ if new_analysis:
                             st.error("Please enter valid numeric values for all inputs.")
 
                         # Display the calculated value - Circumferential Fill
-                        st.text_input('Solder Vol', value=f"{volume_of_solder_per_joint:.2f}", key="volume_of_solder_per_joint", disabled=True) 
-                        st.text_input('Solder Wt/Joint', value=f"{weight_of_Solder_per_joint:.2f}", key="weight_of_Solder_per_joint", disabled=True) 
-                        st.text_input('Solder Wt/Brd', value=f"{weight_of_Solder_per_board:.2f}", key="weight_of_Solder_per_board", disabled=True) 
+                        st.text_input('Solder Vol(mm^3)', value=f"{volume_of_solder_per_joint:.2f}", key="volume_of_solder_per_joint", disabled=True) 
+                        st.text_input('Solder Wt/Joint(g)', value=f"{weight_of_Solder_per_joint:.2f}", key="weight_of_Solder_per_joint", disabled=True) 
+                        st.text_input('Solder Wt/Brd(g)', value=f"{weight_of_Solder_per_board:.2f}", key="weight_of_Solder_per_board", disabled=True) 
 
                     with barrel_col:
                         st.subheader("Solder Bar")
@@ -605,7 +605,7 @@ if new_analysis:
 
                         # Display the calculated value - Barrel Fill
                         st.text_input('Barrel Solder Vol(mm^3)', value=f"{barrel_solder_vol:.2f}", key="barrel_solder_vol", disabled=True) 
-                        st.text_input('Barrel Solder Wt/Joint(g)', value=f"{barrel_solder_wt_per_joint:.2f}", key="barrel_solder_wt_per_joint", disabled=True) 
+                        st.text_input('Barrel Solder Wt/Joint(g)', value=f"{barrel_solder_wt_per_joint:.4f}", key="barrel_solder_wt_per_joint", disabled=True) 
                         st.text_input('Barrel Solder Wt/Brd(g)', value=f"{barrel_solder_wt_per_board:.2f}", key="barrel_solder_wt_per_board", disabled=True) 
                         solder_bar_cost = st.text_input('Solder Bar Cost($/g)', value=solder_bar_cost_value, key="solder_bar_cost", disabled=True)
                         st.text_input('Total Solder Wt(g)', value=f"{circumferential_plus_barrel_fill_solder_wt:.2f}", key="circumferential_plus_barrel_fill_solder_wt", disabled=True) 
@@ -738,7 +738,8 @@ if new_analysis:
                                 "Board Length(mm)","Board Width(mm)","Top Wt Estimate %","Top Wastage %","Solder Paste SG (g/cc)","Solder Paste Cost($/g)","Top SP Thick(mm)","Top SP Wt (100%)(g)", "Top SP Wt Estimate(g)","Top SP Cost/Brd($)", #Solder Paste - Top section
                                 "Bot Wt Estimate %","Bot Wastage %","Bot SP Thick(mm)","Bot SP Wt (100%)(g)","Bot SP Wt Estimate(g)","Bot SP Cost/Brd($)",  #Solder Paste - Bottom section
                                 "Flux Wastage %","Flux Cost($/ml)","Flux Area/Brd(mm^2)","Flux Spray Area(mm^2)","Flux Cost Per Board($)", #Flux Wave Soldering section
-                                "Pad OD (mm)","Pad ID (mm)","Solder Joints","Solder Thick (mm)",
+                                "Pad OD (mm)","Pad ID (mm)","Solder Joints","Solder Thick (mm)","Solder Vol(mm^3)","Solder Wt/Joint(g)","Solder Wt/Brd(g)", # Circumferential Fill Solder Bar
+                                "Barrel Dia(mm)","Board Thick(mm)","Barrel Joints","Barrel Solder Thick(mm)","Solder Bar Cost($/g)","Barrel Solder Vol(mm^3)","Barrel Solder Wt/Joint(g)","Barrel Solder Wt/Brd(g)","Solder Bar Cost($/g)","Total Solder Wt(g)","Solder Bar Cost/Brd($)", # Barrel Fill Solder Bar
                                 "PCB ($)","Electronics Component ($)","Mechanical Component ($)","NRE ($)","Consumables ($)", #Input Cost section
                                 "Select Annual Volume","MOH %","FOH %","Profit on RM %","Profit on VA %","R&D %","Warranty %","SG&A %", #OHP% Model Vs. Ann. Volume section
                                 "MOH ($)","Profit on RM ($)","FOH ($)","Profit on VA ($)","Material Cost ($)","Manufacturing Cost ($)","OH&P ($)","R&D ($)","Warranty ($)","SG&A ($)", #Cost Computation section
@@ -776,6 +777,24 @@ if new_analysis:
                             current_data.loc[0, "Flux Area/Brd(mm^2)"] = flux_board_area_value
                             current_data.loc[0, "Flux Spray Area(mm^2)"] = flux_spread_area_value
                             current_data.loc[0, "Flux Cost Per Board($)"] = flux_cost_per_board
+                            current_data.loc[0, "Pad OD (mm)"] = outer_dia_of_pad
+                            current_data.loc[0, "Pad ID (mm)"] = inner_dia_of_pad
+                            current_data.loc[0, "Solder Joints"] = no_of_solder_joints
+                            current_data.loc[0, "Solder Thick (mm)"] = thickness_of_solder
+                            current_data.loc[0, "Solder Vol(mm^3)"] = volume_of_solder_per_joint
+                            current_data.loc[0, "Solder Wt/Joint(g)"] = weight_of_Solder_per_joint
+                            current_data.loc[0, "Solder Wt/Brd(g)"] = weight_of_Solder_per_board
+                            current_data.loc[0, "Barrel Dia(mm)"] = barrel_dia
+                            current_data.loc[0, "Board Thick(mm)"] = board_thick
+                            current_data.loc[0, "Barrel Joints"] = barrel_joints
+                            current_data.loc[0, "Barrel Solder Thick(mm)"] = barrel_solder_thick
+                            current_data.loc[0, "Solder Bar Cost($/g)"] = solder_bar_cost_value
+                            current_data.loc[0, "Barrel Solder Vol(mm^3)"] = barrel_solder_vol
+                            current_data.loc[0, "Barrel Solder Wt/Joint(g)"] = barrel_solder_wt_per_joint
+                            current_data.loc[0, "Barrel Solder Wt/Brd(g)"] = barrel_solder_wt_per_board
+                            current_data.loc[0, "Solder Bar Cost($/g)"] = solder_bar_cost
+                            current_data.loc[0, "Total Solder Wt(g)"] = circumferential_plus_barrel_fill_solder_wt
+                            current_data.loc[0, "Solder Bar Cost/Brd($)"] = solderbar_cost_per_brd
                             current_data.loc[0, "PCB ($)"] = cost_pcb
                             current_data.loc[0, "Electronics Component ($)"] = cost_electronics_components
                             current_data.loc[0, "Mechanical Component ($)"] = cost_mech_components
@@ -971,9 +990,7 @@ if existing_analysis:
     
 
     # Create one row with 4 columns for headings
-    rtv_col, solder_top_col, solder_bottom_col, flux_col = st.columns(4)
-
-
+    rtv_col, solder_top_col, solder_bottom_col, flux_col, solder_bar_col = st.columns(5)
 
     # RTV Glue
     with rtv_col:
@@ -982,8 +999,8 @@ if existing_analysis:
         # Input Fields
         glue_wt_per_board = st.text_input('RTV Wt/Brd Est', value="", key="glue_wt_per_board")
         wastage_percentage_per_board = st.text_input('RTV Wastage %', value="", key="wastage_percentage_per_board")
-        rtv_glue_cost = st.text_input('RTV Cost/ml', value="", key="rtv_glue_cost")
-        specific_gravity_of_solder = st.text_input('RTV Solder SG', value="", key="specific_gravity_of_solder")
+        rtv_glue_cost = st.text_input('RTV Cost/ml', value="0.052", key="rtv_glue_cost", disabled=True)
+        specific_gravity_of_solder = st.text_input('RTV Solder SG', value="1.09", key="specific_gravity_of_solder", disabled=True)
 
         # Initialize the output variables
         wt_per_board_incl_wastage = 0.0
@@ -1037,9 +1054,6 @@ if existing_analysis:
 
         # Other inputs
         solder_paste_thickness = st.text_input('Top SP Thick(mm)', value="", key="solder_paste_thickness")
-        # weight_of_solder_paste_for_100percentage_wt = st.text_input('Top SP Wt (100%)(g)', value="0.0", key="weight_of_solder_paste_for_100percentage_wt", disabled=True)
-        # top_solder_paste_weight_estimate = st.text_input('Weight of solder paste for Weight Estimate (g)', value="0.0", key="top_solder_paste_weight_estimate", disabled=True)
-        # top_side_cost_per_board = st.text_input('Top SP Cost/Brd($)', value="0.0", key="top_side_cost_per_board", disabled=True)
 
         try:
             # Safely convert inputs to float
@@ -1127,6 +1141,8 @@ if existing_analysis:
         # Input Fields
         flux_wastage_percentage = st.text_input('Flux Wastage %', value="", key="flux_wastage_percentage")
         flux_cost = st.text_input('Flux Cost($/ml)', value="0.0055", key="flux_cost", disabled=True)
+        # flux_board_area = st.text_input('Flux Area/Brd(mm^2)', value="0.0", key="flux_board_area", disabled=True)
+        # flux_spread_area = st.text_input('Flux Spray Area(mm^2)', value="0.0", key="flux_spread_area", disabled=True)
 
         try:
             # Safely convert inputs to float
@@ -1150,6 +1166,85 @@ if existing_analysis:
         st.text_input('Flux Spray Area(mm^2)', value=f"{flux_spread_area_value:.2f}", key="flux_spread_area", disabled=True)
         flux_cost_per_board_value = flux_spread_area_value * flux_cost
         flux_cost_per_board = st.text_input('Flux Cost Per Board($)', value=flux_cost_per_board_value, key="flux_cost_per_board", disabled=True)
+
+    # Flux Wave Soldering
+    with solder_bar_col:
+        circumferential_col, barrel_col = st.columns(2)
+        with circumferential_col:
+            st.subheader("Solder Bar")
+            # Input Fields
+            outer_dia_of_pad = st.text_input('Pad OD (mm)', value="", key="outer_dia_of_pad", disabled=False)
+            inner_dia_of_pad = st.text_input('Pad ID (mm)', value="", key="inner_dia_of_pad", disabled=False)
+            no_of_solder_joints = st.text_input('Solder Joints', value="", key="no_of_solder_joints", disabled=False)
+            thickness_of_solder = st.text_input('Solder Thick (mm)', value="0.6", key="thickness_of_solder", disabled=True)
+
+            try:
+                # Safely convert inputs to float
+                outer_dia_of_pad = float(outer_dia_of_pad) if outer_dia_of_pad else 0.0
+                inner_dia_of_pad = float(inner_dia_of_pad) if inner_dia_of_pad else 0.0
+                no_of_solder_joints = float(no_of_solder_joints) if no_of_solder_joints else 0.0
+                thickness_of_solder = float(thickness_of_solder) if thickness_of_solder else 0.0
+
+                # Calculate the area of the annular ring
+                area_of_ring = math.pi * ((outer_dia_of_pad/2)**2 - (inner_dia_of_pad/2)**2)
+
+                # Calculate the volume of solder per joint - Circumferential Fill
+                volume_of_solder_per_joint = area_of_ring * thickness_of_solder
+                weight_of_Solder_per_joint = (volume_of_solder_per_joint/1000) * paste_specific_gravity
+                weight_of_Solder_per_board = weight_of_Solder_per_joint * no_of_solder_joints
+
+            except ValueError:
+                st.error("Please enter valid numeric values for all inputs.")
+
+            # Display the calculated value - Circumferential Fill
+            st.text_input('Solder Vol(mm^3)', value=f"{volume_of_solder_per_joint:.2f}", key="volume_of_solder_per_joint", disabled=True) 
+            st.text_input('Solder Wt/Joint(g)', value=f"{weight_of_Solder_per_joint:.2f}", key="weight_of_Solder_per_joint", disabled=True) 
+            st.text_input('Solder Wt/Brd(g)', value=f"{weight_of_Solder_per_board:.2f}", key="weight_of_Solder_per_board", disabled=True) 
+
+        with barrel_col:
+            st.subheader("Solder Bar")
+            # Input Fields                            
+            barrel_dia = st.text_input('Barrel Dia(mm)', value="", key="barrel_dia", disabled=False)
+            board_thick = st.text_input('Board Thick(mm)', value="", key="board_thick", disabled=False)
+            barrel_joints = st.text_input('Barrel Joints', value="", key="barrel_joints", disabled=False)
+            barrel_solder_thick = st.text_input('Barrel Solder Thick(mm)', value="", key="barrel_solder_thick", disabled=False)
+            solder_bar_cost_value = st.text_input('Solder Bar Cost($/g)', value="0.024", key="solder_bar_cost_value", disabled=True)
+
+            try:
+                # Safely convert inputs to float
+                barrel_dia = float(barrel_dia) if barrel_dia else 0.0
+                board_thick = float(board_thick) if board_thick else 0.0
+                barrel_joints = float(barrel_joints) if barrel_joints else 0.0
+                barrel_solder_thick = float(barrel_solder_thick) if barrel_solder_thick else 0.0
+                solder_bar_cost_value = float(solder_bar_cost_value) if solder_bar_cost_value else 0.0
+
+                # Calculate the volume of solder per joint - Barrel Fill
+
+                # Calculate the Barrel Solder Vol
+                barrel_solder_vol = (
+                    (math.pi * (barrel_dia ** 2) / 4) -
+                    (math.pi * ((barrel_dia - 2 * barrel_solder_thick) ** 2) / 4)
+                ) * board_thick
+
+                # Calculation of Barrel Solder Weight per Joint
+                barrel_solder_wt_per_joint = (barrel_solder_vol / 1000) * specific_gravity_of_solder  # Convert mm³ to cm³
+
+                # Calculation of Barrel Solder Weight per Board
+                barrel_solder_wt_per_board = barrel_solder_wt_per_joint * barrel_joints
+
+                circumferential_plus_barrel_fill_solder_wt = weight_of_Solder_per_board + barrel_solder_wt_per_board
+                solderbar_cost_per_brd = circumferential_plus_barrel_fill_solder_wt * solder_bar_cost_value
+
+            except ValueError:
+                st.error("Please enter valid numeric values for all inputs.")
+
+            # Display the calculated value - Barrel Fill
+            st.text_input('Barrel Solder Vol(mm^3)', value=f"{barrel_solder_vol:.2f}", key="barrel_solder_vol", disabled=True) 
+            st.text_input('Barrel Solder Wt/Joint(g)', value=f"{barrel_solder_wt_per_joint:.2f}", key="barrel_solder_wt_per_joint", disabled=True) 
+            st.text_input('Barrel Solder Wt/Brd(g)', value=f"{barrel_solder_wt_per_board:.2f}", key="barrel_solder_wt_per_board", disabled=True) 
+            solder_bar_cost = st.text_input('Solder Bar Cost($/g)', value=solder_bar_cost_value, key="solder_bar_cost", disabled=True)
+            st.text_input('Total Solder Wt(g)', value=f"{circumferential_plus_barrel_fill_solder_wt:.2f}", key="circumferential_plus_barrel_fill_solder_wt", disabled=True) 
+            st.text_input('Solder Bar Cost/Brd($)', value=f"{solderbar_cost_per_brd:.2f}", key="solderbar_cost_per_brd", disabled=True) 
         nre_per_unit = nre_selected_data.at[0, "NRE Per Unit ($)"]
 
 
@@ -1203,9 +1298,9 @@ if existing_analysis:
         percentage_labels_grouped = [
             ["MOH %", "FOH %"],
             ["Profit on RM %", "Profit on VA %"],
-            ["R&D %","Warranty %","SG&A %"]
-            # ["Warranty %"],
-            # ["SG&A %"],  # Single element row
+            ["R&D %"],
+            ["Warranty %"],
+            ["SG&A %"],  # Single element row
         ]
         # Display percentage inputs dynamically in rows
         percentage_values = {}
@@ -1246,15 +1341,14 @@ if existing_analysis:
             st.text_input("MOH ($)", value=f"{moh_cost_value:.2f}", disabled=True)
             st.text_input("Profit on RM ($)", value=f"{profit_on_rm_cost_value:.2f}", disabled=True)
             st.text_input("Material Cost ($)", value=f"{total_material_cost_value:.2f}", disabled=True)
-            st.text_input("OH&P ($)", value=f"{total_ohp_cost_value:.2f}", disabled=True)
-            st.text_input("Warranty ($)", value=f"{warranty_cost_value:.2f}", disabled=True)
-            
         with ohpandother_cost_col2:
             st.text_input("FOH ($)", value=f"{foh_cost_value:.2f}", disabled=True)
             st.text_input("Profit on VA ($)", value=f"{profit_on_va_cost_value:.2f}", disabled=True)
             st.text_input("Manufacturing Cost ($)", value=f"{total_manufacturing_cost_value:.2f}", disabled=True)
-            st.text_input("R&D ($)", value=f"{r_n_d_cost_value:.2f}", disabled=True)
-            st.text_input("SG&A ($)", value=f"{sg_and_a_cost_value:.2f}", disabled=True)
+        st.text_input("OH&P ($)", value=f"{total_ohp_cost_value:.2f}", disabled=True)
+        st.text_input("R&D ($)", value=f"{r_n_d_cost_value:.2f}", disabled=True)
+        st.text_input("Warranty ($)", value=f"{warranty_cost_value:.2f}", disabled=True)
+        st.text_input("SG&A ($)", value=f"{sg_and_a_cost_value:.2f}", disabled=True)
 
     with placeholder2_col:
         st.subheader("Cost Summary")
@@ -1280,6 +1374,8 @@ if existing_analysis:
                     "Board Length(mm)","Board Width(mm)","Top Wt Estimate %","Top Wastage %","Solder Paste SG (g/cc)","Solder Paste Cost($/g)","Top SP Thick(mm)","Top SP Wt (100%)(g)", "Top SP Wt Estimate(g)","Top SP Cost/Brd($)", #Solder Paste - Top section
                     "Bot Wt Estimate %","Bot Wastage %","Bot SP Thick(mm)","Bot SP Wt (100%)(g)","Bot SP Wt Estimate(g)","Bot SP Cost/Brd($)",  #Solder Paste - Bottom section
                     "Flux Wastage %","Flux Cost($/ml)","Flux Area/Brd(mm^2)","Flux Spray Area(mm^2)","Flux Cost Per Board($)", #Flux Wave Soldering section
+                    "Pad OD (mm)","Pad ID (mm)","Solder Joints","Solder Thick (mm)","Solder Vol(mm^3)","Solder Wt/Joint(g)","Solder Wt/Brd(g)", # Circumferential Fill Solder Bar
+                    "Barrel Dia(mm)","Board Thick(mm)","Barrel Joints","Barrel Solder Thick(mm)","Solder Bar Cost($/g)","Barrel Solder Vol(mm^3)","Barrel Solder Wt/Joint(g)","Barrel Solder Wt/Brd(g)","Solder Bar Cost($/g)","Total Solder Wt(g)","Solder Bar Cost/Brd($)", # Barrel Fill Solder Bar
                     "PCB ($)","Electronics Component ($)","Mechanical Component ($)","NRE ($)","Consumables ($)", #Input Cost section
                     "Select Annual Volume","MOH %","FOH %","Profit on RM %","Profit on VA %","R&D %","Warranty %","SG&A %", #OHP% Model Vs. Ann. Volume section
                     "MOH ($)","Profit on RM ($)","FOH ($)","Profit on VA ($)","Material Cost ($)","Manufacturing Cost ($)","OH&P ($)","R&D ($)","Warranty ($)","SG&A ($)", #Cost Computation section
@@ -1293,7 +1389,7 @@ if existing_analysis:
                 current_data.loc[0, 'RTV Wt/Brd Est'] = glue_wt_per_board
                 current_data.loc[0, 'RTV Wastage %'] = wastage_percentage_per_board
                 current_data.loc[0, 'RTV Cost/ml'] = rtv_glue_cost
-                current_data.loc[0, 'RTV Solder SG'] = specific_gravity_of_solder
+                current_data.loc[0, 'RTV Solder SGRTV Solder SG'] = specific_gravity_of_solder
                 current_data.loc[0, 'Wt per Board (Incl Wastage %)'] = wt_per_board_incl_wastage
                 current_data.loc[0, 'RTV Cost Per Board'] = rtv_cost_per_board
                 current_data.loc[0, "Board Length(mm)"] = board_length  
@@ -1317,6 +1413,24 @@ if existing_analysis:
                 current_data.loc[0, "Flux Area/Brd(mm^2)"] = flux_board_area_value
                 current_data.loc[0, "Flux Spray Area(mm^2)"] = flux_spread_area_value
                 current_data.loc[0, "Flux Cost Per Board($)"] = flux_cost_per_board
+                current_data.loc[0, "Pad OD (mm)"] = outer_dia_of_pad
+                current_data.loc[0, "Pad ID (mm)"] = inner_dia_of_pad
+                current_data.loc[0, "Solder Joints"] = no_of_solder_joints
+                current_data.loc[0, "Solder Thick (mm)"] = thickness_of_solder
+                current_data.loc[0, "Solder Vol(mm^3)"] = volume_of_solder_per_joint
+                current_data.loc[0, "Solder Wt/Joint(g)"] = weight_of_Solder_per_joint
+                current_data.loc[0, "Solder Wt/Brd(g)"] = weight_of_Solder_per_board
+                current_data.loc[0, "Barrel Dia(mm)"] = barrel_dia
+                current_data.loc[0, "Board Thick(mm)"] = board_thick
+                current_data.loc[0, "Barrel Joints"] = barrel_joints
+                current_data.loc[0, "Barrel Solder Thick(mm)"] = barrel_solder_thick
+                current_data.loc[0, "Solder Bar Cost($/g)"] = solder_bar_cost_value
+                current_data.loc[0, "Barrel Solder Vol(mm^3)"] = barrel_solder_vol
+                current_data.loc[0, "Barrel Solder Wt/Joint(g)"] = barrel_solder_wt_per_joint
+                current_data.loc[0, "Barrel Solder Wt/Brd(g)"] = barrel_solder_wt_per_board
+                current_data.loc[0, "Solder Bar Cost($/g)"] = solder_bar_cost
+                current_data.loc[0, "Total Solder Wt(g)"] = circumferential_plus_barrel_fill_solder_wt
+                current_data.loc[0, "Solder Bar Cost/Brd($)"] = solderbar_cost_per_brd
                 current_data.loc[0, "PCB ($)"] = cost_pcb
                 current_data.loc[0, "Electronics Component ($)"] = cost_electronics_components
                 current_data.loc[0, "Mechanical Component ($)"] = cost_mech_components
